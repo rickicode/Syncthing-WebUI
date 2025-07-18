@@ -261,3 +261,79 @@ async function populateFolderCheckboxes(containerId, deviceID = null) {
         container.innerHTML = '<p class="text-muted">Error loading folders</p>';
     }
 }
+
+// New Device Modal Functions
+function showNewDeviceModal() {
+    const modal = document.getElementById('newDeviceModal');
+    modal.classList.add('show');
+    
+    // Load current device ID
+    loadCurrentDeviceID();
+}
+
+function hideNewDeviceModal() {
+    document.getElementById('newDeviceModal').classList.remove('show');
+    
+    // Reset modal state
+    document.getElementById('generatedDeviceID').value = '';
+    document.getElementById('useGeneratedBtn').disabled = true;
+}
+
+async function loadCurrentDeviceID() {
+    try {
+        const response = await fetch('/api/system/status');
+        const result = await response.json();
+        
+        if (result.success && result.data.myID) {
+            document.getElementById('currentDeviceID').value = result.data.myID;
+        } else {
+            document.getElementById('currentDeviceID').value = 'Failed to load device ID';
+        }
+    } catch (error) {
+        console.error('Error loading current device ID:', error);
+        document.getElementById('currentDeviceID').value = 'Error loading device ID';
+    }
+}
+
+function generateNewDeviceID() {
+    // Generate a random device ID similar to Syncthing format
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    let deviceID = '';
+    
+    for (let i = 0; i < 7; i++) {
+        if (i > 0) deviceID += '-';
+        for (let j = 0; j < 7; j++) {
+            deviceID += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+    }
+    
+    document.getElementById('generatedDeviceID').value = deviceID;
+    document.getElementById('useGeneratedBtn').disabled = false;
+}
+
+function copyDeviceID(inputId) {
+    const input = document.getElementById(inputId);
+    if (input.value && input.value !== 'Loading...' && !input.value.includes('Error') && !input.value.includes('Failed')) {
+        navigator.clipboard.writeText(input.value).then(() => {
+            showSuccess('Device ID copied to clipboard');
+        }).catch(() => {
+            // Fallback for older browsers
+            input.select();
+            document.execCommand('copy');
+            showSuccess('Device ID copied to clipboard');
+        });
+    } else {
+        showError('No valid device ID to copy');
+    }
+}
+
+function useGeneratedID() {
+    const generatedID = document.getElementById('generatedDeviceID').value;
+    if (generatedID) {
+        hideNewDeviceModal();
+        
+        // Pre-fill the add device modal with generated ID
+        document.getElementById('deviceID').value = generatedID;
+        showAddDeviceModal();
+    }
+}

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Syncthing Web UI</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233498db'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -66,7 +67,10 @@
             <div class="page-content" id="devicesContent">
                 <div class="page-header">
                     <h2>Devices</h2>
-                    <button class="btn btn-primary" onclick="showAddDeviceModal()">Add Device</button>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" onclick="showNewDeviceModal()">New Device</button>
+                        <button class="btn btn-primary" onclick="showAddDeviceModal()">Add Device</button>
+                    </div>
                 </div>
                 
                 <div class="table-container">
@@ -95,6 +99,13 @@
                 <div class="pagination-info" id="devicesPageInfo">Page 1 of 1</div>
             </div>
         </main>
+        
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p>Powered by <strong>HIJILABS</strong> (2025 - <span id="currentYear">2025</span>)</p>
+            </div>
+        </footer>
     </div>
 
     <!-- Add Device Modal -->
@@ -252,6 +263,43 @@
                     <button type="submit" class="btn btn-primary">Update Device</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- New Device Modal -->
+    <div class="modal" id="newDeviceModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>New Device</h3>
+                <span class="modal-close" onclick="hideNewDeviceModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p class="help-text">Generate a new device ID for this instance or share your current device ID with another device.</p>
+                
+                <div class="form-group">
+                    <label>Current Device ID</label>
+                    <div class="device-id-display">
+                        <input type="text" id="currentDeviceID" readonly class="disabled-input" value="Loading...">
+                        <button type="button" class="btn btn-small btn-secondary" onclick="copyDeviceID('currentDeviceID')">Copy</button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Generated Device ID</label>
+                    <div class="device-id-display">
+                        <input type="text" id="generatedDeviceID" readonly class="disabled-input" placeholder="Click generate to create new ID">
+                        <button type="button" class="btn btn-small btn-secondary" onclick="copyDeviceID('generatedDeviceID')">Copy</button>
+                    </div>
+                </div>
+                
+                <div class="generate-actions">
+                    <button type="button" class="btn btn-primary" onclick="generateNewDeviceID()">Generate New ID</button>
+                    <button type="button" class="btn btn-success" onclick="useGeneratedID()" id="useGeneratedBtn" disabled>Use This ID</button>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="hideNewDeviceModal()">Close</button>
+            </div>
         </div>
     </div>
 

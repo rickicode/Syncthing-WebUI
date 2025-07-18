@@ -10,7 +10,7 @@ const systemRouter = require('./routes/system');
 
 const app = express();
 const PORT = process.env.APP_PORT || 4567;
-const HOST = process.env.APP_HOST || 'localhost';
+const HOST = process.env.APP_HOST || '0.0.0.0';
 
 // Middleware
 app.use(cors());

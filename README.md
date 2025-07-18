@@ -19,6 +19,37 @@ A lightweight, fast web interface for managing Syncthing servers with support fo
 
 ## Installation
 
+### Option 1: Docker Compose (Recommended)
+
+1. Clone or download this repository
+2. Copy the Docker environment template:
+   ```bash
+   cp .env.docker .env
+   ```
+
+3. Start both Syncthing and the Web UI:
+   ```bash
+   docker-compose up -d
+   ```
+
+4. Get the Syncthing API key:
+   - Open Syncthing web interface at `http://localhost:8384`
+   - Go to **Settings** → **General**
+   - Copy the **API Key**
+   - Update the `.env` file with your API key:
+     ```env
+     SYNCTHING_API_KEY=your-actual-api-key-here
+     ```
+
+5. Restart the web UI container:
+   ```bash
+   docker-compose restart syncthing-webui
+   ```
+
+The web interface will be available at `http://localhost:4567`.
+
+### Option 2: Manual Installation
+
 1. Clone or download this repository
 2. Install dependencies:
    ```bash
@@ -37,7 +68,7 @@ A lightweight, fast web interface for managing Syncthing servers with support fo
    SYNCTHING_API_KEY=your-api-key-here
    SYNCTHING_HTTPS=false
    APP_PORT=4567
-   APP_HOST=localhost
+   APP_HOST=0.0.0.0
    ```
 
 ## Getting Your Syncthing API Key
@@ -60,6 +91,43 @@ npm start
 ```
 
 The web interface will be available at `http://localhost:4567` (or your configured port).
+
+## Docker Management
+
+### Starting the Services
+```bash
+docker-compose up -d
+```
+
+### Stopping the Services
+```bash
+docker-compose down
+```
+
+### Viewing Logs
+```bash
+# View all logs
+docker-compose logs
+
+# View specific service logs
+docker-compose logs syncthing
+docker-compose logs syncthing-webui
+
+# Follow logs in real-time
+docker-compose logs -f
+```
+
+### Updating the Images
+```bash
+docker-compose pull
+docker-compose up -d
+```
+
+### Data Persistence
+- Syncthing configuration: `./syncthing-config`
+- Syncthing data: `./syncthing-data`
+
+Make sure to backup these directories to preserve your Syncthing configuration and synchronized files.
 
 ## API Endpoints
 

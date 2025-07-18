@@ -7,7 +7,42 @@ const itemsPerPage = 20;
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
+    updateCurrentYear();
 });
+
+// Update current year in footer
+function updateCurrentYear() {
+    const currentYearElement = document.getElementById('currentYear');
+    if (currentYearElement) {
+        currentYearElement.textContent = new Date().getFullYear();
+    }
+    
+    // Add GitHub source code information
+    const footerContent = document.querySelector('.footer-content p');
+    if (footerContent) {
+        const githubLink = document.createElement('a');
+        githubLink.href = 'https://github.com/rickicode/Syncthing-WebUI';
+        githubLink.target = '_blank';
+        githubLink.rel = 'noopener noreferrer';
+        githubLink.textContent = 'GitHub';
+        githubLink.style.color = '#3498db';
+        githubLink.style.textDecoration = 'none';
+        githubLink.style.marginLeft = '10px';
+        githubLink.style.fontWeight = '500';
+        
+        githubLink.addEventListener('mouseover', function() {
+            this.style.textDecoration = 'underline';
+        });
+        
+        githubLink.addEventListener('mouseout', function() {
+            this.style.textDecoration = 'none';
+        });
+        
+        const separator = document.createTextNode(' | ');
+        footerContent.appendChild(separator);
+        footerContent.appendChild(githubLink);
+    }
+}
 
 async function initializeApp() {
     setupEventListeners();

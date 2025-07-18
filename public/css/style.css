@@ -737,6 +737,133 @@ body {
     border-top: 1px solid #e0e0e0;
 }
 
+/* New Device Modal Styles */
+.page-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.new-device-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.tab-btn {
+    padding: 10px 16px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    color: #333;
+    background: #f5f5f5;
+}
+
+.tab-btn.active {
+    color: #3498db;
+    border-bottom-color: #3498db;
+}
+
+.new-device-content {
+    display: none;
+    padding: 20px 0;
+}
+
+.new-device-content.active {
+    display: block;
+}
+
+.help-text {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.device-id-display {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+.device-id-display input {
+    flex: 1;
+}
+
+.generate-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.discover-controls {
+    margin-bottom: 20px;
+}
+
+.discovered-devices {
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    min-height: 200px;
+    padding: 16px;
+    background: #fafafa;
+}
+
+.discovered-device {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    background: white;
+}
+
+.device-info {
+    flex: 1;
+}
+
+.device-name {
+    font-weight: 500;
+    color: #333;
+}
+
+.device-address {
+    font-size: 12px;
+    color: #666;
+    margin-top: 2px;
+}
+
+.device-id-short {
+    font-family: monospace;
+    font-size: 11px;
+    color: #666;
+    margin-top: 2px;
+}
+
+.btn-spinner {
+    display: inline-block;
+    animation: spin 1s linear infinite;
+}
+
+.btn-loading .btn-text {
+    display: none;
+}
+
+.btn-loading .btn-spinner {
+    display: inline-block;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .container {
@@ -849,6 +976,32 @@ body {
         order: 3;
         margin-top: 8px;
     }
+}
+
+/* Footer */
+.footer {
+    background: #f8f9fa;
+    border-top: 1px solid #e0e0e0;
+    padding: 16px 0;
+    margin-top: 40px;
+}
+
+.footer-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+    text-align: center;
+}
+
+.footer-content p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.footer-content strong {
+    color: #3498db;
+    font-weight: 600;
 }
 
 /* Utility Classes */

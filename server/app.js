@@ -2,28 +2,53 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const session = require('express-session');
 
 // Import routes
 const devicesRouter = require('./routes/devices');
 const foldersRouter = require('./routes/folders');
 const systemRouter = require('./routes/system');
 
+// Import auth middleware
+const { requireAuth, handleLogin, handleLogout, checkAuth } = require('./middleware/auth');
+
 const app = express();
 const PORT = process.env.APP_PORT || 4567;
 const HOST = process.env.APP_HOST || '0.0.0.0';
+
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-session-secret-change-this',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // Set to true if using HTTPS
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Authentication routes (before static files)
+app.post('/api/auth/login', handleLogin);
+app.post('/api/auth/logout', handleLogout);
+app.get('/api/auth/status', checkAuth);
+
+// Login page route
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/login.html'));
+});
+
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, '../public')));
 
-// API Routes
-app.use('/api/devices', devicesRouter);
-app.use('/api/folders', foldersRouter);
-app.use('/api/system', systemRouter);
+// API Routes (protected by authentication)
+app.use('/api/devices', requireAuth, devicesRouter);
+app.use('/api/folders', requireAuth, foldersRouter);
+app.use('/api/system', requireAuth, systemRouter);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -34,9 +59,13 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Serve index.html for root path
-app.get('/', (req, res) => {
+// Protected routes
+app.get('/', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+app.get('/folders.html', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/folders.html'));
 });
 
 // Error handling middleware

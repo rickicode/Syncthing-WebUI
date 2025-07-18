@@ -6,9 +6,49 @@ const itemsPerPage = 20;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
+    checkAuthStatus();
     initializeApp();
     updateCurrentYear();
 });
+
+// Check authentication status
+async function checkAuthStatus() {
+    try {
+        const response = await fetch('/api/auth/status');
+        const data = await response.json();
+        
+        if (data.authEnabled && !data.authenticated) {
+            window.location.href = '/login';
+            return;
+        }
+        
+        // Hide logout button if auth is disabled
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn && !data.authEnabled) {
+            logoutBtn.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Auth check failed:', error);
+    }
+}
+
+// Logout function
+async function logout() {
+    try {
+        const response = await fetch('/api/auth/logout', {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            window.location.href = '/login';
+        } else {
+            showError('Logout failed');
+        }
+    } catch (error) {
+        console.error('Logout error:', error);
+        showError('Logout failed');
+    }
+}
 
 // Update current year in footer
 function updateCurrentYear() {

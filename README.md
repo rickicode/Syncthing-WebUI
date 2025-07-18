@@ -48,6 +48,8 @@ A lightweight, fast web interface for managing Syncthing servers with support fo
 
 The web interface will be available at `http://localhost:4567`.
 
+**Default Login:** When authentication is enabled, use the default password `admin123` to login, or change it in your `.env` file.
+
 ### Option 2: Manual Installation
 
 1. Clone or download this repository
@@ -189,10 +191,42 @@ Make sure to backup these directories to preserve your Syncthing configuration a
 - Safari 12+
 - Edge 79+
 
+## Authentication
+
+The web interface includes password-only authentication for security.
+
+### Configuration
+
+Authentication can be configured in your `.env` file:
+
+```env
+# Authentication settings
+AUTH_ENABLED=true                    # Enable/disable authentication
+AUTH_PASSWORD=your-secure-password   # Set your password
+SESSION_SECRET=your-session-secret   # Session encryption key
+```
+
+### Default Credentials
+
+- **Password:** `admin123` (change this in production!)
+
+### Features
+
+- **Password-only login** - No username required
+- **Persistent sessions** - Stay logged in until you logout
+- **Automatic logout** - Click the logout button to end your session
+- **Session security** - Sessions are encrypted and secured
+
+### Disabling Authentication
+
+To disable authentication completely, set `AUTH_ENABLED=false` in your `.env` file.
+
 ## Security Notes
 
 - Always use HTTPS in production
 - Keep your Syncthing API key secure
+- Change the default authentication password
+- Use a strong session secret in production
 - Consider firewall rules for the web interface
 - The application runs on the server, not in Syncthing's web interface
 

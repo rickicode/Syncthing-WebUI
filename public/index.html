@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syncthing Web UI</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-container">
+                <div class="header-left">
+                    <h1>Syncthing Web UI</h1>
+                    <span class="page-subtitle">Device Management</span>
+                </div>
+                <div class="header-center">
+                    <nav class="main-nav">
+                        <a href="index.html" class="nav-link active">Devices</a>
+                        <a href="folders.html" class="nav-link">Folders</a>
+                    </nav>
+                </div>
+                <div class="header-right">
+                    <div class="header-actions">
+                        <div class="search-container">
+                            <input type="text" id="searchInput" placeholder="Search devices..." class="search-input">
+                        </div>
+                        <div class="filter-container">
+                            <select id="statusFilter" class="status-filter">
+                                <option value="">All Status</option>
+                                <option value="connected">Connected</option>
+                                <option value="disconnected">Disconnected</option>
+                            </select>
+                        </div>
+                        <div class="status-indicator" id="statusIndicator">
+                            <span class="status-dot"></span>
+                            <span class="status-text">Connecting...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main">
+            <!-- Loading Indicator -->
+            <div class="loading" id="loading">
+                <div class="loading-spinner"></div>
+                <span>Loading...</span>
+            </div>
+
+            <!-- Error Message -->
+            <div class="error-message" id="errorMessage" style="display: none;">
+                <span class="error-icon">⚠️</span>
+                <span class="error-text"></span>
+                <button class="error-close" onclick="hideError()">×</button>
+            </div>
+
+            <!-- Success Message -->
+            <div class="success-message" id="successMessage" style="display: none;">
+                <span class="success-icon">✅</span>
+                <span class="success-text"></span>
+                <button class="success-close" onclick="hideSuccess()">×</button>
+            </div>
+
+            <!-- Devices Content -->
+            <div class="page-content" id="devicesContent">
+                <div class="page-header">
+                    <h2>Devices</h2>
+                    <button class="btn btn-primary" onclick="showAddDeviceModal()">Add Device</button>
+                </div>
+                
+                <div class="table-container">
+                    <table class="data-table" id="devicesTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Device ID</th>
+                                <th>Status</th>
+                                <th>Addresses</th>
+                                <th>Compression</th>
+                                <th>Introducer</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="devicesTableBody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination" id="devicesPagination">
+                    <button class="pagination-btn" id="devicesPrevBtn" disabled>Previous</button>
+                    <div class="pagination-numbers" id="devicesPageNumbers"></div>
+                    <button class="pagination-btn" id="devicesNextBtn" disabled>Next</button>
+                </div>
+                <div class="pagination-info" id="devicesPageInfo">Page 1 of 1</div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Device Modal -->
+    <div class="modal" id="addDeviceModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Device</h3>
+                <span class="modal-close" onclick="hideAddDeviceModal()">&times;</span>
+            </div>
+            <form id="addDeviceForm" class="modal-form">
+                <div class="form-group">
+                    <label for="deviceID">Device ID*</label>
+                    <input type="text" id="deviceID" name="deviceID" required 
+                           placeholder="Enter device ID (e.g., ABCDEFG-...)">
+                </div>
+                <div class="form-group">
+                    <label for="deviceName">Name</label>
+                    <input type="text" id="deviceName" name="name" 
+                           placeholder="Device name (optional)">
+                </div>
+                <div class="form-group">
+                    <label for="deviceAddresses">Addresses</label>
+                    <input type="text" id="deviceAddresses" name="addresses" 
+                           placeholder="dynamic or IP:port (comma separated)">
+                </div>
+                <div class="form-group">
+                    <label for="deviceCompression">Compression</label>
+                    <select id="deviceCompression" name="compression">
+                        <option value="metadata">Metadata</option>
+                        <option value="always">Always</option>
+                        <option value="never">Never</option>
+                    </select>
+                </div>
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="deviceIntroducer" name="introducer">
+                        Introducer
+                    </label>
+                </div>
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="devicePaused" name="paused">
+                        Paused
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>Shared Folders</label>
+                    <div id="deviceFolders" class="devices-checkboxes">
+                        <!-- Folder checkboxes will be populated dynamically -->
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="hideAddDeviceModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Device</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Folder Modal -->
+    <div class="modal" id="addFolderModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Folder</h3>
+                <span class="modal-close" onclick="hideAddFolderModal()">&times;</span>
+            </div>
+            <form id="addFolderForm" class="modal-form">
+                <div class="form-group">
+                    <label for="folderID">Folder ID*</label>
+                    <input type="text" id="folderID" name="id" required 
+                           placeholder="Enter folder ID">
+                </div>
+                <div class="form-group">
+                    <label for="folderLabel">Label</label>
+                    <input type="text" id="folderLabel" name="label" 
+                           placeholder="Folder label (optional)">
+                </div>
+                <div class="form-group">
+                    <label for="folderPath">Path*</label>
+                    <input type="text" id="folderPath" name="path" required 
+                           placeholder="Enter folder path">
+                </div>
+                <div class="form-group">
+                    <label for="folderType">Type</label>
+                    <select id="folderType" name="type">
+                        <option value="sendreceive">Send & Receive</option>
+                        <option value="sendonly">Send Only</option>
+                        <option value="receiveonly">Receive Only</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="folderDevices">Shared with Devices</label>
+                    <div id="folderDevices" class="devices-checkboxes">
+                        <!-- Device checkboxes will be populated dynamically -->
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="hideAddFolderModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Folder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Device Modal -->
+    <div class="modal" id="editDeviceModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Device</h3>
+                <span class="modal-close" onclick="hideEditDeviceModal()">&times;</span>
+            </div>
+            <form id="editDeviceForm" class="modal-form">
+                <input type="hidden" id="editDeviceIDHidden" name="deviceID">
+                <div class="form-group">
+                    <label for="editDeviceIDDisplay">Device ID</label>
+                    <input type="text" id="editDeviceIDDisplay" disabled class="disabled-input" 
+                           title="Device ID cannot be changed">
+                </div>
+                <div class="form-group">
+                    <label for="editDeviceName">Name</label>
+                    <input type="text" id="editDeviceName" name="name">
+                </div>
+                <div class="form-group">
+                    <label for="editDeviceAddresses">Addresses</label>
+                    <input type="text" id="editDeviceAddresses" name="addresses">
+                </div>
+                <div class="form-group">
+                    <label for="editDeviceCompression">Compression</label>
+                    <select id="editDeviceCompression" name="compression">
+                        <option value="metadata">Metadata</option>
+                        <option value="always">Always</option>
+                        <option value="never">Never</option>
+                    </select>
+                </div>
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="editDeviceIntroducer" name="introducer">
+                        Introducer
+                    </label>
+                </div>
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="editDevicePaused" name="paused">
+                        Paused
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>Shared Folders</label>
+                    <div id="editDeviceFolders" class="devices-checkboxes">
+                        <!-- Folder checkboxes will be populated dynamically -->
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="hideEditDeviceModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Device</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal" id="confirmModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Confirm Action</h3>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage"></p>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="hideConfirmModal()">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmButton">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/app.js"></script>
+    <script src="js/devices.js"></script>
+    <script src="js/folders.js"></script>
+    <script src="js/search.js"></script>
+</body>
+</html>

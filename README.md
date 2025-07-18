@@ -96,17 +96,37 @@ The web interface will be available at `http://localhost:4567` (or your configur
 
 ## Docker Management
 
-### Starting the Services
+### Building the Docker Image
+
+To build the Docker image locally:
+
+```bash
+# Build the image
+docker build -t syncthing-webui .
+
+# Run the container
+docker run -d \
+  --name syncthing-webui \
+  -p 4567:4567 \
+  -e SYNCTHING_HOST=your-syncthing-host \
+  -e SYNCTHING_API_KEY=your-api-key \
+  -e AUTH_PASSWORD=your-password \
+  syncthing-webui
+```
+
+### Using Docker Compose
+
+#### Starting the Services
 ```bash
 docker-compose up -d
 ```
 
-### Stopping the Services
+#### Stopping the Services
 ```bash
 docker-compose down
 ```
 
-### Viewing Logs
+#### Viewing Logs
 ```bash
 # View all logs
 docker-compose logs
@@ -119,7 +139,7 @@ docker-compose logs syncthing-webui
 docker-compose logs -f
 ```
 
-### Updating the Images
+#### Updating the Images
 ```bash
 docker-compose pull
 docker-compose up -d

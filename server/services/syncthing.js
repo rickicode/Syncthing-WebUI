@@ -73,13 +73,28 @@ class SyncthingService {
         name: deviceData.name || deviceData.deviceID.substring(0, 7),
         addresses: deviceData.addresses || ['dynamic'],
         compression: deviceData.compression || 'metadata',
+        certName: "",
         introducer: deviceData.introducer || false,
-        paused: deviceData.paused || false,
         skipIntroductionRemovals: false,
-        autoAcceptFolders: false
+        introducedBy: "",
+        paused: deviceData.paused || false,
+        allowedNetworks: [],
+        autoAcceptFolders: false,
+        maxSendKbps: 0,
+        maxRecvKbps: 0,
+        ignoredFolders: [],
+        maxRequestKiB: 0,
+        untrusted: false,
+        remoteGUIPort: 0,
+        numConnections: 0
       };
 
       config.devices.push(newDevice);
+      
+      // Handle shared folders if provided
+      if (deviceData.sharedFolders && deviceData.sharedFolders.length > 0) {
+        this.updateFolderDeviceSharing(config, deviceData.deviceID, deviceData.sharedFolders);
+      }
       
       await this.client.post('/rest/system/config', config);
       return newDevice;
@@ -97,6 +112,13 @@ class SyncthingService {
         throw new Error('Device not found');
       }
 
+      // Handle shared folders update if provided
+      if (deviceData.sharedFolders !== undefined) {
+        this.updateFolderDeviceSharing(config, deviceID, deviceData.sharedFolders);
+        // Remove sharedFolders from deviceData to avoid updating device config with it
+        delete deviceData.sharedFolders;
+      }
+
       config.devices[deviceIndex] = { ...config.devices[deviceIndex], ...deviceData };
       
       await this.client.post('/rest/system/config', config);
@@ -104,6 +126,30 @@ class SyncthingService {
     } catch (error) {
       throw new Error(`Failed to update device: ${error.message}`);
     }
+  }
+
+  // Helper method to update folder device sharing
+  updateFolderDeviceSharing(config, deviceID, sharedFolderIds) {
+    // First, remove device from all folders
+    config.folders.forEach(folder => {
+      folder.devices = folder.devices.filter(d => d.deviceID !== deviceID);
+    });
+
+    // Then, add device to selected folders
+    sharedFolderIds.forEach(folderId => {
+      const folder = config.folders.find(f => f.id === folderId);
+      if (folder) {
+        // Check if device is not already in the folder
+        const deviceExists = folder.devices.some(d => d.deviceID === deviceID);
+        if (!deviceExists) {
+          folder.devices.push({
+            deviceID: deviceID,
+            introducedBy: '',
+            encryptionPassword: ''
+          });
+        }
+      }
+    });
   }
 
   async deleteDevice(deviceID) {
@@ -168,19 +214,58 @@ class SyncthingService {
     try {
       const config = await this.getSystemConfig();
       
+      // Validate and format devices
+      let validatedDevices = [];
+      if (folderData.devices && folderData.devices.length > 0) {
+        validatedDevices = folderData.devices
+          .map(device => {
+            // Handle both string deviceID and object format
+            const deviceID = typeof device === 'string' ? device : device.deviceID;
+            
+            // Validate that device exists in config
+            const deviceExists = config.devices.some(d => d.deviceID === deviceID);
+            if (!deviceExists) {
+              throw new Error(`Device ${deviceID} not found`);
+            }
+            
+            return {
+              deviceID: deviceID,
+              introducedBy: device.introducedBy || ''
+            };
+          });
+      }
+      
+      // Check if folder ID already exists
+      const folderExists = config.folders.some(f => f.id === folderData.id);
+      if (folderExists) {
+        throw new Error(`Folder with ID '${folderData.id}' already exists`);
+      }
+      
       const newFolder = {
         id: folderData.id,
         label: folderData.label || folderData.id,
+        filesystemType: "basic",
         path: folderData.path,
         type: folderData.type || 'sendreceive',
-        devices: folderData.devices || [],
+        devices: validatedDevices.map(device => ({
+          deviceID: device.deviceID,
+          introducedBy: device.introducedBy || "",
+          encryptionPassword: ""
+        })),
         rescanIntervalS: folderData.rescanIntervalS || 3600,
         fsWatcherEnabled: true,
         fsWatcherDelayS: 10,
+        fsWatcherTimeoutS: 0,
         ignorePerms: false,
         autoNormalize: true,
         minDiskFree: { value: 1, unit: '%' },
-        versioning: { type: 'none' },
+        versioning: {
+          type: "",
+          params: {},
+          cleanupIntervalS: 3600,
+          fsPath: "",
+          fsType: "basic"
+        },
         copiers: 0,
         pullerMaxPendingKiB: 0,
         hashers: 0,
@@ -193,12 +278,30 @@ class SyncthingService {
         disableTempIndexes: false,
         paused: false,
         weakHashThresholdPct: 25,
-        markerName: '.stfolder'
+        markerName: '.stfolder',
+        copyOwnershipFromParent: false,
+        modTimeWindowS: 0,
+        maxConcurrentWrites: 2,
+        disableFsync: false,
+        blockPullOrder: "standard",
+        copyRangeMethod: "standard",
+        caseSensitiveFS: false,
+        junctionsAsDirs: false,
+        syncOwnership: false,
+        sendOwnership: false,
+        syncXattrs: false,
+        sendXattrs: false,
+        xattrFilter: {
+          entries: [],
+          maxSingleEntrySize: 1024,
+          maxTotalSize: 4096
+        }
       };
 
       config.folders.push(newFolder);
       
       await this.client.post('/rest/system/config', config);
+      
       return newFolder;
     } catch (error) {
       throw new Error(`Failed to add folder: ${error.message}`);

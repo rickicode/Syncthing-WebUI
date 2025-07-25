@@ -248,7 +248,11 @@ async function populateFolderCheckboxes(containerId, deviceID = null) {
         
         folders.forEach(folder => {
             const label = document.createElement('label');
-            const isShared = deviceID ? folder.devices.some(d => d.deviceID === deviceID) : false;
+            // Check if device is shared with this folder
+            let isShared = false;
+            if (deviceID && folder.devices && Array.isArray(folder.devices)) {
+                isShared = folder.devices.some(d => d.deviceID === deviceID);
+            }
             
             label.innerHTML = `
                 <input type="checkbox" name="folders" value="${escapeHtml(folder.id)}" ${isShared ? 'checked' : ''}>

@@ -64,4 +64,20 @@ router.delete('/:deviceID', async (req, res) => {
   }
 });
 
+// POST /api/devices/bulk - Bulk add devices with shared folders
+router.post('/bulk', async (req, res) => {
+  try {
+    const { bulkData } = req.body;
+    
+    if (!bulkData || !Array.isArray(bulkData)) {
+      return res.status(400).json({ success: false, error: 'Bulk data array is required' });
+    }
+
+    const results = await syncthingService.bulkAddDevices(bulkData);
+    res.json({ success: true, data: results });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;

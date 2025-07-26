@@ -175,6 +175,100 @@ class SyncthingService {
     }
   }
 
+  // Bulk add devices with shared folders
+  async bulkAddDevices(bulkData) {
+    try {
+      const config = await this.getSystemConfig();
+      const results = [];
+      
+      for (const item of bulkData) {
+        const result = {
+          deviceID: item.deviceID,
+          success: false,
+          error: null,
+          device: null
+        };
+        
+        try {
+          // Validate device ID
+          if (!item.deviceID || item.deviceID.length < 50) {
+            throw new Error('Device ID must be at least 50 characters long');
+          }
+          
+          // Check if device already exists
+          const deviceExists = config.devices.some(d => d.deviceID === item.deviceID);
+          if (deviceExists) {
+            throw new Error('Device already exists');
+          }
+          
+          // Validate shared folders exist
+          if (item.sharedFolders && item.sharedFolders.length > 0) {
+            for (const folderId of item.sharedFolders) {
+              const folderExists = config.folders.some(f => f.id === folderId);
+              if (!folderExists) {
+                throw new Error(`Folder '${folderId}' not found`);
+              }
+            }
+          }
+          
+          // Create new device
+          const newDevice = {
+            deviceID: item.deviceID,
+            name: item.name || item.deviceID.substring(0, 7),
+            addresses: item.addresses || ['dynamic'],
+            compression: item.compression || 'metadata',
+            certName: "",
+            introducer: item.introducer || false,
+            skipIntroductionRemovals: false,
+            introducedBy: "",
+            paused: item.paused || false,
+            allowedNetworks: [],
+            autoAcceptFolders: false,
+            maxSendKbps: 0,
+            maxRecvKbps: 0,
+            ignoredFolders: [],
+            maxRequestKiB: 0,
+            untrusted: false,
+            remoteGUIPort: 0,
+            numConnections: 0
+          };
+          
+          // Add device to config
+          config.devices.push(newDevice);
+          
+          // Handle shared folders if provided
+          if (item.sharedFolders && item.sharedFolders.length > 0) {
+            this.updateFolderDeviceSharing(config, item.deviceID, item.sharedFolders);
+          }
+          
+          result.success = true;
+          result.device = newDevice;
+          
+        } catch (error) {
+          result.error = error.message;
+        }
+        
+        results.push(result);
+      }
+      
+      // Only save config if there were successful additions
+      const successfulDevices = results.filter(r => r.success);
+      if (successfulDevices.length > 0) {
+        await this.client.post('/rest/system/config', config);
+      }
+      
+      return {
+        total: bulkData.length,
+        successful: successfulDevices.length,
+        failed: results.length - successfulDevices.length,
+        results: results
+      };
+      
+    } catch (error) {
+      throw new Error(`Failed to bulk add devices: ${error.message}`);
+    }
+  }
+
   // Folder methods
   async getFolders() {
     try {

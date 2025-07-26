@@ -604,6 +604,10 @@ body {
     overflow-y: auto;
 }
 
+.large-modal {
+    max-width: 800px;
+}
+
 .modal-header {
     display: flex;
     justify-content: space-between;
@@ -1029,4 +1033,168 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* Bulk Add Modal Styles */
+.bulk-preview {
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 16px;
+    background: #fafafa;
+    max-height: 300px;
+    overflow-y: auto;
+    font-size: 13px;
+}
+
+.bulk-errors h4,
+.bulk-success h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.bulk-errors h4 {
+    color: #e74c3c;
+}
+
+.bulk-success h4 {
+    color: #27ae60;
+}
+
+.bulk-errors ul,
+.bulk-success ul {
+    margin: 0;
+    padding-left: 20px;
+    list-style-type: disc;
+}
+
+.bulk-errors li,
+.bulk-success li {
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.error-item {
+    color: #e74c3c;
+}
+
+.success-item {
+    color: #27ae60;
+}
+
+.bulk-progress {
+    margin: 16px 0;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #e0e0e0;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #3498db;
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+.progress-text {
+    font-size: 13px;
+    color: #666;
+    text-align: center;
+}
+
+.bulk-results {
+    margin: 16px 0;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #e0e0e0;
+    font-size: 13px;
+}
+
+.bulk-summary {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.bulk-summary h4 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.bulk-summary p {
+    margin: 0;
+    color: #666;
+}
+
+.bulk-details {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.bulk-details h5 {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.bulk-details ul {
+    margin: 0;
+    padding-left: 20px;
+    list-style-type: disc;
+}
+
+.bulk-details li {
+    margin-bottom: 4px;
+    line-height: 1.3;
+}
+
+.bulk-error {
+    color: #e74c3c;
+}
+
+.bulk-error h4 {
+    color: #e74c3c;
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.help-text code {
+    background: #f1f1f1;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+/* Responsive adjustments for bulk modal */
+@media (max-width: 768px) {
+    .large-modal {
+        max-width: 95%;
+        margin: 10px;
+        width: calc(100% - 20px);
+    }
+    
+    .bulk-preview,
+    .bulk-results {
+        max-height: 200px;
+    }
+    
+    .bulk-details {
+        gap: 12px;
+    }
 }

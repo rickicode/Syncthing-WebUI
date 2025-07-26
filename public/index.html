@@ -72,6 +72,7 @@
                     <h2>Devices</h2>
                     <div class="page-actions">
                         <button class="btn btn-secondary" onclick="showNewDeviceModal()">New Device</button>
+                        <button class="btn btn-secondary" onclick="showBulkAddModal()">Bulk Add</button>
                         <button class="btn btn-primary" onclick="showAddDeviceModal()">Add Device</button>
                     </div>
                 </div>
@@ -109,6 +110,46 @@
                 <p>Powered by <strong>HIJILABS</strong> (2025 - <span id="currentYear">2025</span>)</p>
             </div>
         </footer>
+    </div>
+
+    <!-- Bulk Add Devices Modal -->
+    <div class="modal" id="bulkAddModal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>Bulk Add Devices</h3>
+                <span class="modal-close" onclick="hideBulkAddModal()">&times;</span>
+            </div>
+            <form id="bulkAddForm" class="modal-form">
+                <div class="form-group">
+                    <label for="bulkInput">Device List*</label>
+                    <p class="help-text">
+                        Enter one device per line in format: <strong>DEVICE-ID|folder1,folder2,folder3</strong><br>
+                        Example:<br>
+                        <code>ABCDEFG-HIJKLMN-OPQRSTU-VWXYZAB-CDEFGHI-JKLMNOP-QRSTUVW|shared,documents</code>
+                    </p>
+                    <textarea id="bulkInput" name="bulkInput" rows="8" required 
+                              placeholder="DEVICE-ID-1|folder1,folder2&#10;DEVICE-ID-2|folder3,folder4&#10;DEVICE-ID-3|folder1,folder3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Preview (parsed data)</label>
+                    <div id="bulkPreview" class="bulk-preview">
+                        <p class="text-muted">Enter device data above to see preview</p>
+                    </div>
+                </div>
+                <div id="bulkProgress" class="bulk-progress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">Processing...</div>
+                </div>
+                <div id="bulkResults" class="bulk-results" style="display: none;"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="hideBulkAddModal()">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="parseBulkData()">Preview</button>
+                    <button type="submit" class="btn btn-success" id="bulkSubmitBtn" disabled>Add Devices</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Add Device Modal -->

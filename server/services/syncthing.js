@@ -269,6 +269,135 @@ class SyncthingService {
     }
   }
 
+  // Bulk add folders with shared devices
+  async bulkAddFolders(bulkData) {
+    try {
+      const config = await this.getSystemConfig();
+      const results = [];
+      
+      for (const item of bulkData) {
+        const result = {
+          folderID: item.id,
+          success: false,
+          error: null,
+          folder: null
+        };
+        
+        try {
+          // Validate required fields
+          if (!item.id || !item.path) {
+            throw new Error('Folder ID and path are required');
+          }
+          
+          // Check if folder already exists
+          const folderExists = config.folders.some(f => f.id === item.id);
+          if (folderExists) {
+            throw new Error('Folder already exists');
+          }
+          
+          // Validate shared devices exist (only if devices are specified)
+          let validatedDevices = [];
+          if (item.sharedDevices && item.sharedDevices.length > 0) {
+            for (const deviceId of item.sharedDevices) {
+              const deviceExists = config.devices.some(d => d.deviceID === deviceId);
+              if (!deviceExists) {
+                throw new Error(`Device '${deviceId}' not found`);
+              }
+            }
+            
+            // Format devices
+            validatedDevices = item.sharedDevices.map(deviceID => ({
+              deviceID: deviceID,
+              introducedBy: "",
+              encryptionPassword: ""
+            }));
+          }
+          
+          // Create new folder
+          const newFolder = {
+            id: item.id,
+            label: item.label || item.id,
+            filesystemType: "basic",
+            path: item.path,
+            type: item.type || 'sendreceive',
+            devices: validatedDevices,
+            rescanIntervalS: item.rescanIntervalS || 3600,
+            fsWatcherEnabled: true,
+            fsWatcherDelayS: 10,
+            fsWatcherTimeoutS: 0,
+            ignorePerms: false,
+            autoNormalize: true,
+            minDiskFree: { value: 1, unit: '%' },
+            versioning: {
+              type: "",
+              params: {},
+              cleanupIntervalS: 3600,
+              fsPath: "",
+              fsType: "basic"
+            },
+            copiers: 0,
+            pullerMaxPendingKiB: 0,
+            hashers: 0,
+            order: 'random',
+            ignoreDelete: false,
+            scanProgressIntervalS: 0,
+            pullerPauseS: 0,
+            maxConflicts: 10,
+            disableSparseFiles: false,
+            disableTempIndexes: false,
+            paused: false,
+            weakHashThresholdPct: 25,
+            markerName: '.stfolder',
+            copyOwnershipFromParent: false,
+            modTimeWindowS: 0,
+            maxConcurrentWrites: 2,
+            disableFsync: false,
+            blockPullOrder: "standard",
+            copyRangeMethod: "standard",
+            caseSensitiveFS: false,
+            junctionsAsDirs: false,
+            syncOwnership: false,
+            sendOwnership: false,
+            syncXattrs: false,
+            sendXattrs: false,
+            xattrFilter: {
+              entries: [],
+              maxSingleEntrySize: 1024,
+              maxTotalSize: 4096
+            }
+          };
+          
+          // Add folder to config
+          config.folders.push(newFolder);
+          
+          result.success = true;
+          result.folder = newFolder;
+          
+        } catch (error) {
+          result.error = error.message;
+        }
+        
+        results.push(result);
+      }
+      
+      // Only save config if there were successful additions
+      const successfulFolders = results.filter(r => r.success);
+      if (successfulFolders.length > 0) {
+        await this.client.post('/rest/system/config', config);
+      }
+      
+      return {
+        total: bulkData.length,
+        successful: successfulFolders.length,
+        failed: results.length - successfulFolders.length,
+        results: results
+      };
+      
+    } catch (error) {
+      throw new Error(`Failed to bulk add folders: ${error.message}`);
+    }
+  }
+
   // Folder methods
   async getFolders() {
     try {

@@ -72,7 +72,10 @@
             <div class="page-content" id="foldersContent">
                 <div class="page-header">
                     <h2>Folders</h2>
-                    <button class="btn btn-primary" onclick="showAddFolderModal()">Add Folder</button>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" onclick="showBulkAddFolderModal()">Bulk Add</button>
+                        <button class="btn btn-primary" onclick="showAddFolderModal()">Add Folder</button>
+                    </div>
                 </div>
                 
                 <div class="table-container">
@@ -150,6 +153,47 @@
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" onclick="hideAddFolderModal()">Cancel</button>
                     <button type="submit" class="btn btn-primary">Add Folder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bulk Add Folders Modal -->
+    <div class="modal" id="bulkAddFolderModal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>Bulk Add Folders</h3>
+                <span class="modal-close" onclick="hideBulkAddFolderModal()">&times;</span>
+            </div>
+            <form id="bulkAddFolderForm" class="modal-form">
+                <div class="form-group">
+                    <label for="bulkFolderInput">Folder List*</label>
+                    <p class="help-text">
+                        Enter one folder per line in format: <strong>FOLDER-ID|FOLDER-PATH</strong> or <strong>FOLDER-ID|FOLDER-PATH|device1,device2,device3</strong><br>
+                        Examples:<br>
+                        <code>RDP100|C:\Users\admin\Desktop\RDP100</code> (without device sharing)<br>
+                        <code>shared|C:\Users\admin\Documents\shared|DEVICE-ID-1,DEVICE-ID-2</code> (with device sharing)
+                    </p>
+                    <textarea id="bulkFolderInput" name="bulkFolderInput" rows="8" required 
+                              placeholder="RDP100|C:\Users\admin\Desktop\RDP100&#10;shared|C:\Users\admin\Documents\shared|DEVICE-ID-1,DEVICE-ID-2&#10;documents|C:\Users\admin\Documents"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Preview (parsed data)</label>
+                    <div id="bulkFolderPreview" class="bulk-preview">
+                        <p class="text-muted">Enter folder data above to see preview</p>
+                    </div>
+                </div>
+                <div id="bulkFolderProgress" class="bulk-progress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="folderProgressFill"></div>
+                    </div>
+                    <div class="progress-text" id="folderProgressText">Processing...</div>
+                </div>
+                <div id="bulkFolderResults" class="bulk-results" style="display: none;"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="hideBulkAddFolderModal()">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="parseBulkFolderData()">Preview</button>
+                    <button type="submit" class="btn btn-success" id="bulkFolderSubmitBtn" disabled>Add Folders</button>
                 </div>
             </form>
         </div>

@@ -155,22 +155,46 @@ class SyncthingService {
   async deleteDevice(deviceID) {
     try {
       const config = await this.getSystemConfig();
-      const deviceIndex = config.devices.findIndex(d => d.deviceID === deviceID);
+      
+      // Add debugging
+      console.log('Delete device request for ID:', deviceID);
+      console.log('Available devices:', config.devices.map(d => ({ id: d.deviceID, name: d.name })));
+      
+      // Try to find device with exact match first
+      let deviceIndex = config.devices.findIndex(d => d.deviceID === deviceID);
+      
+      // If not found, try URL decoded version
+      if (deviceIndex === -1) {
+        const decodedDeviceID = decodeURIComponent(deviceID);
+        console.log('Trying decoded device ID:', decodedDeviceID);
+        deviceIndex = config.devices.findIndex(d => d.deviceID === decodedDeviceID);
+      }
+      
+      // If still not found, try case-insensitive search
+      if (deviceIndex === -1) {
+        console.log('Trying case-insensitive search');
+        deviceIndex = config.devices.findIndex(d => d.deviceID.toLowerCase() === deviceID.toLowerCase());
+      }
       
       if (deviceIndex === -1) {
-        throw new Error('Device not found');
+        console.log('Device not found after all attempts');
+        throw new Error(`Device not found. Searched for: ${deviceID}`);
       }
 
+      const deviceToDelete = config.devices[deviceIndex];
+      console.log('Found device to delete:', deviceToDelete.name, deviceToDelete.deviceID);
+      
       config.devices.splice(deviceIndex, 1);
       
       // Also remove device from all folders
       config.folders.forEach(folder => {
-        folder.devices = folder.devices.filter(d => d.deviceID !== deviceID);
+        folder.devices = folder.devices.filter(d => d.deviceID !== deviceToDelete.deviceID);
       });
       
       await this.client.post('/rest/system/config', config);
       return { success: true };
     } catch (error) {
+      console.error('Delete device error:', error);
       throw new Error(`Failed to delete device: ${error.message}`);
     }
   }

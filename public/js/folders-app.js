@@ -3,7 +3,7 @@ let foldersData = [];
 let allFoldersData = [];
 let allDevicesData = [];
 let currentFoldersPage = 1;
-const itemsPerPage = 20;
+let itemsPerPage = 20;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -169,7 +169,25 @@ async function loadData() {
 async function loadFolders() {
     try {
         const response = await fetch('/api/folders');
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            // If we get HTML instead of JSON, it's likely a login redirect
+            if (response.status === 401 || response.url.includes('/login')) {
+                window.location.href = '/login';
+                return;
+            }
+            throw new Error('Invalid response format - expected JSON');
+        }
+        
         const result = await response.json();
+        
+        // Handle session expiration
+        if (!result.success && result.requiresLogin) {
+            window.location.href = '/login';
+            return;
+        }
         
         if (result.success) {
             // Sort folders by label (name) using natural sorting
@@ -181,6 +199,11 @@ async function loadFolders() {
         }
     } catch (error) {
         console.error('Error loading folders:', error);
+        // Check if it's a session expiration error
+        if (error.message.includes('Session expired') || error.message.includes('Unauthorized')) {
+            window.location.href = '/login';
+            return;
+        }
         throw error;
     }
 }
@@ -188,7 +211,25 @@ async function loadFolders() {
 async function loadDevices() {
     try {
         const response = await fetch('/api/devices');
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            // If we get HTML instead of JSON, it's likely a login redirect
+            if (response.status === 401 || response.url.includes('/login')) {
+                window.location.href = '/login';
+                return;
+            }
+            throw new Error('Invalid response format - expected JSON');
+        }
+        
         const result = await response.json();
+        
+        // Handle session expiration
+        if (!result.success && result.requiresLogin) {
+            window.location.href = '/login';
+            return;
+        }
         
         if (result.success) {
             allDevicesData = result.data.sort((a, b) => a.name.localeCompare(b.name));
@@ -197,6 +238,11 @@ async function loadDevices() {
         }
     } catch (error) {
         console.error('Error loading devices:', error);
+        // Check if it's a session expiration error
+        if (error.message.includes('Session expired') || error.message.includes('Unauthorized')) {
+            window.location.href = '/login';
+            return;
+        }
         throw error;
     }
 }
@@ -225,6 +271,7 @@ function renderFoldersTable() {
         
         const row = document.createElement('tr');
         row.innerHTML = `
+            <td><input type="checkbox" class="folder-checkbox" value="${escapeHtml(folder.id)}" onchange="updateBulkDeleteFoldersButton()"></td>
             <td>${escapeHtml(folder.label)}</td>
             <td>${escapeHtml(folder.id)}</td>
             <td title="${escapeHtml(folder.path)}">${escapeHtml(folder.path.length > 30 ? folder.path.substring(0, 30) + '...' : folder.path)}</td>
@@ -484,6 +531,147 @@ function showConfirmModal(message, onConfirm) {
 
 function hideConfirmModal() {
     document.getElementById('confirmModal').classList.remove('show');
+}
+
+// Bulk delete functions for folders
+function toggleAllFolderSelection() {
+    const selectAll = document.getElementById('selectAllFolders');
+    const checkboxes = document.querySelectorAll('.folder-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+    
+    updateBulkDeleteFoldersButton();
+}
+
+function updateBulkDeleteFoldersButton() {
+    const checkboxes = document.querySelectorAll('.folder-checkbox:checked');
+    const bulkDeleteBtn = document.getElementById('bulkDeleteFoldersBtn');
+    const selectAll = document.getElementById('selectAllFolders');
+    
+    if (checkboxes.length > 0) {
+        bulkDeleteBtn.style.display = 'inline-block';
+        bulkDeleteBtn.textContent = `Delete Selected (${checkboxes.length})`;
+    } else {
+        bulkDeleteBtn.style.display = 'none';
+    }
+    
+    // Update select all checkbox state
+    const allCheckboxes = document.querySelectorAll('.folder-checkbox');
+    if (allCheckboxes.length > 0) {
+        selectAll.checked = checkboxes.length === allCheckboxes.length;
+        selectAll.indeterminate = checkboxes.length > 0 && checkboxes.length < allCheckboxes.length;
+    }
+}
+
+function showBulkDeleteFoldersModal() {
+    const checkboxes = document.querySelectorAll('.folder-checkbox:checked');
+    if (checkboxes.length === 0) {
+        showError('No folders selected');
+        return;
+    }
+    
+    const modal = document.getElementById('bulkDeleteFoldersModal');
+    const listContainer = document.getElementById('bulkDeleteFoldersList');
+    
+    // Get selected folder data
+    const selectedFolders = [];
+    checkboxes.forEach(checkbox => {
+        const folderID = checkbox.value;
+        const folder = allFoldersData.find(f => f.id === folderID);
+        if (folder) {
+            selectedFolders.push(folder);
+        }
+    });
+    
+    // Populate the list
+    listContainer.innerHTML = '';
+    selectedFolders.forEach(folder => {
+        const item = document.createElement('div');
+        item.className = 'bulk-delete-item';
+        item.innerHTML = `
+            <strong>${escapeHtml(folder.label)}</strong><br>
+            <small>ID: ${escapeHtml(folder.id)} | Path: ${escapeHtml(folder.path)}</small>
+        `;
+        listContainer.appendChild(item);
+    });
+    
+    modal.classList.add('show');
+}
+
+function hideBulkDeleteFoldersModal() {
+    document.getElementById('bulkDeleteFoldersModal').classList.remove('show');
+}
+
+async function confirmBulkDeleteFolders() {
+    const checkboxes = document.querySelectorAll('.folder-checkbox:checked');
+    if (checkboxes.length === 0) {
+        showError('No folders selected');
+        return;
+    }
+    
+    const folderIDs = Array.from(checkboxes).map(cb => cb.value);
+    
+    hideBulkDeleteFoldersModal();
+    showLoading(true);
+    
+    try {
+        let successful = 0;
+        let failed = 0;
+        const errors = [];
+        
+        // Delete folders one by one
+        for (const folderID of folderIDs) {
+            try {
+                const response = await fetch(`/api/folders/${encodeURIComponent(folderID)}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    successful++;
+                } else {
+                    failed++;
+                    errors.push(`${folderID}: ${result.error || 'Failed to delete'}`);
+                }
+            } catch (error) {
+                failed++;
+                errors.push(`${folderID}: ${error.message}`);
+            }
+        }
+        
+        // Show results
+        if (successful > 0) {
+            showSuccess(`Successfully deleted ${successful} folder(s). ${failed > 0 ? `${failed} failed.` : ''}`);
+        }
+        
+        if (failed > 0) {
+            console.error('Bulk delete errors:', errors);
+            showError(`Failed to delete ${failed} folder(s). Check console for details.`);
+        }
+        
+        // Reload data
+        await loadFolders();
+        
+        // Reset checkboxes
+        document.getElementById('selectAllFolders').checked = false;
+        updateBulkDeleteFoldersButton();
+        
+    } catch (error) {
+        showError('Bulk delete failed: ' + error.message);
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Page size change function for folders
+function changeFoldersPageSize() {
+    const pageSizeSelect = document.getElementById('foldersPageSize');
+    itemsPerPage = parseInt(pageSizeSelect.value);
+    currentFoldersPage = 1; // Reset to first page
+    renderFoldersTable();
 }
 
 // Refresh data periodically

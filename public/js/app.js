@@ -2,7 +2,7 @@
 let devicesData = [];
 let allDevicesData = [];
 let currentDevicesPage = 1;
-const itemsPerPage = 20;
+let itemsPerPage = 20;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -181,7 +181,25 @@ async function loadData() {
 async function loadDevices() {
     try {
         const response = await fetch('/api/devices');
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            // If we get HTML instead of JSON, it's likely a login redirect
+            if (response.status === 401 || response.url.includes('/login')) {
+                window.location.href = '/login';
+                return;
+            }
+            throw new Error('Invalid response format - expected JSON');
+        }
+        
         const result = await response.json();
+        
+        // Handle session expiration
+        if (!result.success && result.requiresLogin) {
+            window.location.href = '/login';
+            return;
+        }
         
         if (result.success) {
             // Sort devices by name using natural sorting (handles numbers correctly)
@@ -193,6 +211,11 @@ async function loadDevices() {
         }
     } catch (error) {
         console.error('Error loading devices:', error);
+        // Check if it's a session expiration error
+        if (error.message.includes('Session expired') || error.message.includes('Unauthorized')) {
+            window.location.href = '/login';
+            return;
+        }
         throw error;
     }
 }
@@ -218,6 +241,7 @@ function renderDevicesTable() {
     pageData.forEach(device => {
         const row = document.createElement('tr');
         row.innerHTML = `
+            <td><input type="checkbox" class="device-checkbox" value="${escapeHtml(device.deviceID)}" onchange="updateBulkDeleteButton()"></td>
             <td>${escapeHtml(device.name)}</td>
             <td><div class="device-id" title="${escapeHtml(device.deviceID)}">${escapeHtml(device.deviceID.substring(0, 7))}...</div></td>
             <td><span class="status-badge ${device.connected ? 'connected' : 'disconnected'}">${device.connected ? 'Connected' : 'Disconnected'}</span></td>
@@ -415,6 +439,147 @@ function addEllipsis(container) {
     ellipsis.className = 'pagination-ellipsis';
     ellipsis.textContent = '...';
     container.appendChild(ellipsis);
+}
+
+// Bulk delete functions
+function toggleAllDeviceSelection() {
+    const selectAll = document.getElementById('selectAllDevices');
+    const checkboxes = document.querySelectorAll('.device-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+    
+    updateBulkDeleteButton();
+}
+
+function updateBulkDeleteButton() {
+    const checkboxes = document.querySelectorAll('.device-checkbox:checked');
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    const selectAll = document.getElementById('selectAllDevices');
+    
+    if (checkboxes.length > 0) {
+        bulkDeleteBtn.style.display = 'inline-block';
+        bulkDeleteBtn.textContent = `Delete Selected (${checkboxes.length})`;
+    } else {
+        bulkDeleteBtn.style.display = 'none';
+    }
+    
+    // Update select all checkbox state
+    const allCheckboxes = document.querySelectorAll('.device-checkbox');
+    if (allCheckboxes.length > 0) {
+        selectAll.checked = checkboxes.length === allCheckboxes.length;
+        selectAll.indeterminate = checkboxes.length > 0 && checkboxes.length < allCheckboxes.length;
+    }
+}
+
+function showBulkDeleteModal() {
+    const checkboxes = document.querySelectorAll('.device-checkbox:checked');
+    if (checkboxes.length === 0) {
+        showError('No devices selected');
+        return;
+    }
+    
+    const modal = document.getElementById('bulkDeleteModal');
+    const listContainer = document.getElementById('bulkDeleteList');
+    
+    // Get selected device data
+    const selectedDevices = [];
+    checkboxes.forEach(checkbox => {
+        const deviceID = checkbox.value;
+        const device = allDevicesData.find(d => d.deviceID === deviceID);
+        if (device) {
+            selectedDevices.push(device);
+        }
+    });
+    
+    // Populate the list
+    listContainer.innerHTML = '';
+    selectedDevices.forEach(device => {
+        const item = document.createElement('div');
+        item.className = 'bulk-delete-item';
+        item.innerHTML = `
+            <strong>${escapeHtml(device.name)}</strong><br>
+            <small>${escapeHtml(device.deviceID.substring(0, 20))}...</small>
+        `;
+        listContainer.appendChild(item);
+    });
+    
+    modal.classList.add('show');
+}
+
+function hideBulkDeleteModal() {
+    document.getElementById('bulkDeleteModal').classList.remove('show');
+}
+
+async function confirmBulkDelete() {
+    const checkboxes = document.querySelectorAll('.device-checkbox:checked');
+    if (checkboxes.length === 0) {
+        showError('No devices selected');
+        return;
+    }
+    
+    const deviceIDs = Array.from(checkboxes).map(cb => cb.value);
+    
+    hideBulkDeleteModal();
+    showLoading(true);
+    
+    try {
+        let successful = 0;
+        let failed = 0;
+        const errors = [];
+        
+        // Delete devices one by one
+        for (const deviceID of deviceIDs) {
+            try {
+                const response = await fetch(`/api/devices/${encodeURIComponent(deviceID)}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    successful++;
+                } else {
+                    failed++;
+                    errors.push(`${deviceID}: ${result.error || 'Failed to delete'}`);
+                }
+            } catch (error) {
+                failed++;
+                errors.push(`${deviceID}: ${error.message}`);
+            }
+        }
+        
+        // Show results
+        if (successful > 0) {
+            showSuccess(`Successfully deleted ${successful} device(s). ${failed > 0 ? `${failed} failed.` : ''}`);
+        }
+        
+        if (failed > 0) {
+            console.error('Bulk delete errors:', errors);
+            showError(`Failed to delete ${failed} device(s). Check console for details.`);
+        }
+        
+        // Reload data
+        await loadDevices();
+        
+        // Reset checkboxes
+        document.getElementById('selectAllDevices').checked = false;
+        updateBulkDeleteButton();
+        
+    } catch (error) {
+        showError('Bulk delete failed: ' + error.message);
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Page size change function for devices
+function changeDevicesPageSize() {
+    const pageSizeSelect = document.getElementById('devicesPageSize');
+    itemsPerPage = parseInt(pageSizeSelect.value);
+    currentDevicesPage = 1; // Reset to first page
+    renderDevicesTable();
 }
 
 // Refresh data periodically

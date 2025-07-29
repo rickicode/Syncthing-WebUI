@@ -16,8 +16,9 @@ const requireAuth = (req, res, next) => {
   if (req.path.startsWith('/api/')) {
     return res.status(401).json({
       success: false,
-      error: 'Unauthorized',
-      message: 'Authentication required'
+      error: 'Session expired',
+      message: 'Please login again',
+      requiresLogin: true
     });
   }
 

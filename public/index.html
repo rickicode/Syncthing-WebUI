@@ -71,6 +71,7 @@
                 <div class="page-header">
                     <h2>Devices</h2>
                     <div class="page-actions">
+                        <button class="btn btn-danger" id="bulkDeleteBtn" onclick="showBulkDeleteModal()" style="display: none;">Delete Selected</button>
                         <button class="btn btn-secondary" onclick="showNewDeviceModal()">New Device</button>
                         <button class="btn btn-secondary" onclick="showBulkAddModal()">Bulk Add</button>
                         <button class="btn btn-primary" onclick="showAddDeviceModal()">Add Device</button>
@@ -81,6 +82,7 @@
                     <table class="data-table" id="devicesTable">
                         <thead>
                             <tr>
+                                <th><input type="checkbox" id="selectAllDevices" onchange="toggleAllDeviceSelection()"></th>
                                 <th>Name</th>
                                 <th>Device ID</th>
                                 <th>Status</th>
@@ -95,10 +97,21 @@
                     </table>
                 </div>
 
-                <div class="pagination" id="devicesPagination">
-                    <button class="pagination-btn" id="devicesPrevBtn" disabled>Previous</button>
-                    <div class="pagination-numbers" id="devicesPageNumbers"></div>
-                    <button class="pagination-btn" id="devicesNextBtn" disabled>Next</button>
+                <div class="pagination-controls">
+                    <div class="page-size-selector">
+                        <label for="devicesPageSize">Show:</label>
+                        <select id="devicesPageSize" onchange="changeDevicesPageSize()">
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                        <span>items per page</span>
+                    </div>
+                    <div class="pagination" id="devicesPagination">
+                        <button class="pagination-btn" id="devicesPrevBtn" disabled>Previous</button>
+                        <div class="pagination-numbers" id="devicesPageNumbers"></div>
+                        <button class="pagination-btn" id="devicesNextBtn" disabled>Next</button>
+                    </div>
                 </div>
                 <div class="pagination-info" id="devicesPageInfo">Page 1 of 1</div>
             </div>
@@ -123,12 +136,14 @@
                 <div class="form-group">
                     <label for="bulkInput">Device List*</label>
                     <p class="help-text">
-                        Enter one device per line in format: <strong>DEVICE-ID|folder1,folder2,folder3</strong><br>
-                        Example:<br>
-                        <code>ABCDEFG-HIJKLMN-OPQRSTU-VWXYZAB-CDEFGHI-JKLMNOP-QRSTUVW|shared,documents</code>
+                        Enter one device per line in format: <strong>DEVICE-ID|folder1,folder2|DeviceName</strong><br>
+                        Device name is optional. If not provided, first 7 characters of Device ID will be used.<br>
+                        Examples:<br>
+                        <code>ABCDEFG-HIJKLMN-OPQRSTU-VWXYZAB-CDEFGHI-JKLMNOP-QRSTUVW|shared,documents|Server1</code><br>
+                        <code>ABCDEFG-HIJKLMN-OPQRSTU-VWXYZAB-CDEFGHI-JKLMNOP-QRSTUVW|shared,documents</code> (auto name)
                     </p>
                     <textarea id="bulkInput" name="bulkInput" rows="8" required 
-                              placeholder="DEVICE-ID-1|folder1,folder2&#10;DEVICE-ID-2|folder3,folder4&#10;DEVICE-ID-3|folder1,folder3"></textarea>
+                              placeholder="DEVICE-ID-1|folder1,folder2|DeviceName1&#10;DEVICE-ID-2|folder3,folder4|DeviceName2&#10;DEVICE-ID-3|folder1,folder3"></textarea>
                 </div>
                 <div class="form-group">
                     <label>Preview (parsed data)</label>
@@ -343,6 +358,26 @@
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-secondary" onclick="hideNewDeviceModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Delete Modal -->
+    <div class="modal" id="bulkDeleteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Bulk Delete Devices</h3>
+                <span class="modal-close" onclick="hideBulkDeleteModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the following devices? This action cannot be undone.</p>
+                <div id="bulkDeleteList" class="bulk-delete-list">
+                    <!-- Selected devices will be listed here -->
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="hideBulkDeleteModal()">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmBulkDelete()">Delete All Selected</button>
             </div>
         </div>
     </div>

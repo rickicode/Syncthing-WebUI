@@ -73,6 +73,7 @@
                 <div class="page-header">
                     <h2>Folders</h2>
                     <div class="page-actions">
+                        <button class="btn btn-danger" id="bulkDeleteFoldersBtn" onclick="showBulkDeleteFoldersModal()" style="display: none;">Delete Selected</button>
                         <button class="btn btn-secondary" onclick="showBulkAddFolderModal()">Bulk Add</button>
                         <button class="btn btn-primary" onclick="showAddFolderModal()">Add Folder</button>
                     </div>
@@ -82,6 +83,7 @@
                     <table class="data-table" id="foldersTable">
                         <thead>
                             <tr>
+                                <th><input type="checkbox" id="selectAllFolders" onchange="toggleAllFolderSelection()"></th>
                                 <th>Label</th>
                                 <th>ID</th>
                                 <th>Path</th>
@@ -96,10 +98,21 @@
                     </table>
                 </div>
 
-                <div class="pagination" id="foldersPagination">
-                    <button class="pagination-btn" id="foldersPrevBtn" disabled>Previous</button>
-                    <div class="pagination-numbers" id="foldersPageNumbers"></div>
-                    <button class="pagination-btn" id="foldersNextBtn" disabled>Next</button>
+                <div class="pagination-controls">
+                    <div class="page-size-selector">
+                        <label for="foldersPageSize">Show:</label>
+                        <select id="foldersPageSize" onchange="changeFoldersPageSize()">
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                        <span>items per page</span>
+                    </div>
+                    <div class="pagination" id="foldersPagination">
+                        <button class="pagination-btn" id="foldersPrevBtn" disabled>Previous</button>
+                        <div class="pagination-numbers" id="foldersPageNumbers"></div>
+                        <button class="pagination-btn" id="foldersNextBtn" disabled>Next</button>
+                    </div>
                 </div>
                 <div class="pagination-info" id="foldersPageInfo">Page 1 of 1</div>
             </div>
@@ -196,6 +209,26 @@
                     <button type="submit" class="btn btn-success" id="bulkFolderSubmitBtn" disabled>Add Folders</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Bulk Delete Folders Modal -->
+    <div class="modal" id="bulkDeleteFoldersModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Bulk Delete Folders</h3>
+                <span class="modal-close" onclick="hideBulkDeleteFoldersModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the following folders? This action cannot be undone.</p>
+                <div id="bulkDeleteFoldersList" class="bulk-delete-list">
+                    <!-- Selected folders will be listed here -->
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="hideBulkDeleteFoldersModal()">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmBulkDeleteFolders()">Delete All Selected</button>
+            </div>
         </div>
     </div>
 

@@ -174,68 +174,74 @@ async function resumeFolder(folderID) {
     }
 }
 
-// Form submission handler
-document.getElementById('addFolderForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const folderData = {
-        id: formData.get('id').trim(),
-        label: formData.get('label').trim(),
-        path: formData.get('path').trim(),
-        type: formData.get('type'),
-        devices: []
-    };
+// Initialize form event listeners when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Form submission handler
+    const addFolderForm = document.getElementById('addFolderForm');
+    if (addFolderForm) {
+        addFolderForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const folderData = {
+                id: formData.get('id').trim(),
+                label: formData.get('label').trim(),
+                path: formData.get('path').trim(),
+                type: formData.get('type'),
+                devices: []
+            };
 
-    // Get selected devices
-    const selectedDevices = formData.getAll('devices');
-    folderData.devices = selectedDevices.map(deviceID => ({
-        deviceID: deviceID,
-        introducedBy: ''
-    }));
+            // Get selected devices
+            const selectedDevices = formData.getAll('devices');
+            folderData.devices = selectedDevices.map(deviceID => ({
+                deviceID: deviceID,
+                introducedBy: ''
+            }));
 
-    // Validate required fields
-    if (!folderData.id) {
-        showError('Folder ID is required');
-        return;
-    }
+            // Validate required fields
+            if (!folderData.id) {
+                showError('Folder ID is required');
+                return;
+            }
 
-    if (!folderData.path) {
-        showError('Folder path is required');
-        return;
-    }
+            if (!folderData.path) {
+                showError('Folder path is required');
+                return;
+            }
 
-    // Set default label if not provided
-    if (!folderData.label) {
-        folderData.label = folderData.id;
-    }
+            // Set default label if not provided
+            if (!folderData.label) {
+                folderData.label = folderData.id;
+            }
 
-    // Show loading indicator
-    showLoading(true);
+            // Show loading indicator
+            showLoading(true);
 
-    try {
-        const response = await fetch('/api/folders', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(folderData)
+            try {
+                const response = await fetch('/api/folders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(folderData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showSuccess('Folder added successfully');
+                    hideAddFolderModal();
+                    await loadFolders();
+                } else {
+                    showError(result.error || 'Failed to add folder');
+                }
+            } catch (error) {
+                showError('Failed to add folder: ' + error.message);
+            } finally {
+                // Hide loading indicator
+                showLoading(false);
+            }
         });
-
-        const result = await response.json();
-
-        if (result.success) {
-            showSuccess('Folder added successfully');
-            hideAddFolderModal();
-            await loadFolders();
-        } else {
-            showError(result.error || 'Failed to add folder');
-        }
-    } catch (error) {
-        showError('Failed to add folder: ' + error.message);
-    } finally {
-        // Hide loading indicator
-        showLoading(false);
     }
 });
 
@@ -343,72 +349,90 @@ function parseBulkFolderData() {
     previewContainer.innerHTML = previewHTML;
 }
 
-// Form submission handler for bulk add folders
-document.getElementById('bulkAddFolderForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    if (!window.bulkFolderParsedData || window.bulkFolderParsedData.length === 0) {
-        showError('No valid folders to add. Please check your input and try again.');
-        return;
-    }
-    
-    const progressContainer = document.getElementById('bulkFolderProgress');
-    const resultsContainer = document.getElementById('bulkFolderResults');
-    const progressFill = document.getElementById('folderProgressFill');
-    const progressText = document.getElementById('folderProgressText');
-    const submitBtn = document.getElementById('bulkFolderSubmitBtn');
-    
-    // Show progress
-    progressContainer.style.display = 'block';
-    resultsContainer.style.display = 'none';
-    submitBtn.disabled = true;
-    
-    try {
-        progressText.textContent = 'Preparing bulk folder add...';
-        progressFill.style.width = '10%';
-        
-        const response = await fetch('/api/folders/bulk', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                bulkData: window.bulkFolderParsedData
-            })
-        });
-        
-        progressFill.style.width = '90%';
-        progressText.textContent = 'Processing response...';
-        
-        const result = await response.json();
-        
-        progressFill.style.width = '100%';
-        progressText.textContent = 'Complete!';
-        
-        // Hide progress after a brief delay
-        setTimeout(() => {
-            progressContainer.style.display = 'none';
-        }, 1000);
-        
-        // Show results
-        displayBulkFolderResults(result);
-        
-        if (result.success) {
-            // Reload folders table
-            await loadFolders();
+// Initialize additional form event listeners when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Form submission handler for bulk add folders
+    const bulkAddFolderForm = document.getElementById('bulkAddFolderForm');
+    if (bulkAddFolderForm) {
+        bulkAddFolderForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
             
-            if (result.data.successful > 0) {
-                showSuccess(`Successfully added ${result.data.successful} folder(s). ${result.data.failed > 0 ? `${result.data.failed} failed.` : ''}`);
+            if (!window.bulkFolderParsedData || window.bulkFolderParsedData.length === 0) {
+                showError('No valid folders to add. Please check your input and try again.');
+                return;
             }
-        } else {
-            showError(result.error || 'Failed to process bulk folder add');
-        }
-        
-    } catch (error) {
-        progressContainer.style.display = 'none';
-        showError('Failed to bulk add folders: ' + error.message);
-    } finally {
-        submitBtn.disabled = false;
+            
+            const progressContainer = document.getElementById('bulkFolderProgress');
+            const resultsContainer = document.getElementById('bulkFolderResults');
+            const progressFill = document.getElementById('folderProgressFill');
+            const progressText = document.getElementById('folderProgressText');
+            const submitBtn = document.getElementById('bulkFolderSubmitBtn');
+            
+            // Show progress
+            progressContainer.style.display = 'block';
+            resultsContainer.style.display = 'none';
+            submitBtn.disabled = true;
+            
+            try {
+                progressText.textContent = 'Preparing bulk folder add...';
+                progressFill.style.width = '10%';
+                
+                const response = await fetch('/api/folders/bulk', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        bulkData: window.bulkFolderParsedData
+                    })
+                });
+                
+                progressFill.style.width = '90%';
+                progressText.textContent = 'Processing response...';
+                
+                const result = await response.json();
+                
+                progressFill.style.width = '100%';
+                progressText.textContent = 'Complete!';
+                
+                // Hide progress after a brief delay
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                }, 1000);
+                
+                // Show results
+                displayBulkFolderResults(result);
+                
+                if (result.success) {
+                    // Reload folders table
+                    await loadFolders();
+                    
+                    if (result.data.successful > 0) {
+                        showSuccess(`Successfully added ${result.data.successful} folder(s). ${result.data.failed > 0 ? `${result.data.failed} failed.` : ''}`);
+                    }
+                } else {
+                    showError(result.error || 'Failed to process bulk folder add');
+                }
+                
+            } catch (error) {
+                progressContainer.style.display = 'none';
+                showError('Failed to bulk add folders: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+    }
+
+    // Auto-parse as user types
+    const bulkFolderInput = document.getElementById('bulkFolderInput');
+    if (bulkFolderInput) {
+        bulkFolderInput.addEventListener('input', function() {
+            // Debounce the parsing to avoid too many calls
+            clearTimeout(this.parseTimeout);
+            this.parseTimeout = setTimeout(() => {
+                parseBulkFolderData();
+            }, 500);
+        });
     }
 });
 
@@ -458,12 +482,3 @@ function displayBulkFolderResults(result) {
     resultsContainer.innerHTML = resultsHTML;
     resultsContainer.style.display = 'block';
 }
-
-// Auto-parse as user types
-document.getElementById('bulkFolderInput').addEventListener('input', function() {
-    // Debounce the parsing to avoid too many calls
-    clearTimeout(this.parseTimeout);
-    this.parseTimeout = setTimeout(() => {
-        parseBulkFolderData();
-    }, 500);
-});

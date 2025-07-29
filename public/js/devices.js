@@ -84,117 +84,126 @@ function deleteDevice(deviceID, deviceName) {
     );
 }
 
-// Form submission handlers
-document.getElementById('addDeviceForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const deviceData = {
-        deviceID: formData.get('deviceID').trim(),
-        name: formData.get('name').trim(),
-        compression: formData.get('compression'),
-        introducer: formData.has('introducer'),
-        paused: formData.has('paused')
-    };
+// Initialize form event listeners when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Form submission handlers
+    const addDeviceForm = document.getElementById('addDeviceForm');
+    if (addDeviceForm) {
+        addDeviceForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const deviceData = {
+                deviceID: formData.get('deviceID').trim(),
+                name: formData.get('name').trim(),
+                compression: formData.get('compression'),
+                introducer: formData.has('introducer'),
+                paused: formData.has('paused')
+            };
 
-    // Parse addresses
-    const addressesInput = formData.get('addresses').trim();
-    if (addressesInput) {
-        deviceData.addresses = addressesInput.split(',').map(addr => addr.trim()).filter(addr => addr);
-    }
+            // Parse addresses
+            const addressesInput = formData.get('addresses').trim();
+            if (addressesInput) {
+                deviceData.addresses = addressesInput.split(',').map(addr => addr.trim()).filter(addr => addr);
+            }
 
-    // Get selected folders for sharing
-    const selectedFolders = formData.getAll('folders');
-    deviceData.sharedFolders = selectedFolders;
+            // Get selected folders for sharing
+            const selectedFolders = formData.getAll('folders');
+            deviceData.sharedFolders = selectedFolders;
 
-    // Validate required fields
-    if (!deviceData.deviceID) {
-        showError('Device ID is required');
-        return;
-    }
+            // Validate required fields
+            if (!deviceData.deviceID) {
+                showError('Device ID is required');
+                return;
+            }
 
-    if (deviceData.deviceID.length < 50) {
-        showError('Device ID must be at least 50 characters long');
-        return;
-    }
+            if (deviceData.deviceID.length < 50) {
+                showError('Device ID must be at least 50 characters long');
+                return;
+            }
 
-    // Show loading indicator
-    showLoading(true);
+            // Show loading indicator
+            showLoading(true);
 
-    try {
-        const response = await fetch('/api/devices', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(deviceData)
+            try {
+                const response = await fetch('/api/devices', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(deviceData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showSuccess('Device added successfully');
+                    hideAddDeviceModal();
+                    await loadDevices();
+                } else {
+                    showError(result.error || 'Failed to add device');
+                }
+            } catch (error) {
+                showError('Failed to add device: ' + error.message);
+            } finally {
+                // Hide loading indicator
+                showLoading(false);
+            }
         });
-
-        const result = await response.json();
-
-        if (result.success) {
-            showSuccess('Device added successfully');
-            hideAddDeviceModal();
-            await loadDevices();
-        } else {
-            showError(result.error || 'Failed to add device');
-        }
-    } catch (error) {
-        showError('Failed to add device: ' + error.message);
-    } finally {
-        // Hide loading indicator
-        showLoading(false);
-    }
-});
-
-document.getElementById('editDeviceForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const deviceID = formData.get('deviceID');
-    const deviceData = {
-        name: formData.get('name').trim(),
-        compression: formData.get('compression'),
-        introducer: formData.has('introducer'),
-        paused: formData.has('paused')
-    };
-
-    // Parse addresses
-    const addressesInput = formData.get('addresses').trim();
-    if (addressesInput) {
-        deviceData.addresses = addressesInput.split(',').map(addr => addr.trim()).filter(addr => addr);
     }
 
-    // Get selected folders for sharing
-    const selectedFolders = formData.getAll('folders');
-    deviceData.sharedFolders = selectedFolders;
+    const editDeviceForm = document.getElementById('editDeviceForm');
+    if (editDeviceForm) {
+        editDeviceForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const deviceID = formData.get('deviceID');
+            const deviceData = {
+                name: formData.get('name').trim(),
+                compression: formData.get('compression'),
+                introducer: formData.has('introducer'),
+                paused: formData.has('paused')
+            };
 
-    // Show loading indicator
-    showLoading(true);
+            // Parse addresses
+            const addressesInput = formData.get('addresses').trim();
+            if (addressesInput) {
+                deviceData.addresses = addressesInput.split(',').map(addr => addr.trim()).filter(addr => addr);
+            }
 
-    try {
-        const response = await fetch(`/api/devices/${encodeURIComponent(deviceID)}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(deviceData)
+            // Get selected folders for sharing
+            const selectedFolders = formData.getAll('folders');
+            deviceData.sharedFolders = selectedFolders;
+
+            // Show loading indicator
+            showLoading(true);
+
+            try {
+                const response = await fetch(`/api/devices/${encodeURIComponent(deviceID)}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(deviceData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showSuccess('Device updated successfully');
+                    hideEditDeviceModal();
+                    await loadDevices();
+                } else {
+                    showError(result.error || 'Failed to update device');
+                }
+            } catch (error) {
+                showError('Failed to update device: ' + error.message);
+            } finally {
+                // Hide loading indicator
+                showLoading(false);
+            }
         });
-
-        const result = await response.json();
-
-        if (result.success) {
-            showSuccess('Device updated successfully');
-            hideEditDeviceModal();
-            await loadDevices();
-        } else {
-            showError(result.error || 'Failed to update device');
-        }
-    } catch (error) {
-        showError('Failed to update device: ' + error.message);
-    } finally {
-        // Hide loading indicator
-        showLoading(false);
     }
 });
 
@@ -379,13 +388,14 @@ function parseBulkData() {
         if (!trimmedLine) return;
         
         const parts = trimmedLine.split('|');
-        if (parts.length !== 2) {
-            errors.push(`Line ${index + 1}: Invalid format - expected "DEVICE-ID|folder1,folder2"`);
+        if (parts.length < 2 || parts.length > 3) {
+            errors.push(`Line ${index + 1}: Invalid format - expected "DEVICE-ID|folder1,folder2" or "DEVICE-ID|folder1,folder2|DeviceName"`);
             return;
         }
         
         const deviceID = parts[0].trim();
         const foldersStr = parts[1].trim();
+        const deviceName = parts.length === 3 ? parts[2].trim() : '';
         
         // Validate device ID
         if (!deviceID || deviceID.length < 50) {
@@ -396,9 +406,12 @@ function parseBulkData() {
         // Parse folders
         const folders = foldersStr ? foldersStr.split(',').map(f => f.trim()).filter(f => f) : [];
         
+        // Use provided name or default to first 7 characters of device ID
+        const finalDeviceName = deviceName || deviceID.substring(0, 7);
+        
         parsedData.push({
             deviceID: deviceID,
-            name: deviceID.substring(0, 7),
+            name: finalDeviceName,
             sharedFolders: folders,
             lineNumber: index + 1
         });
@@ -438,72 +451,90 @@ function parseBulkData() {
     previewContainer.innerHTML = previewHTML;
 }
 
-// Form submission handler for bulk add
-document.getElementById('bulkAddForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    if (!window.bulkParsedData || window.bulkParsedData.length === 0) {
-        showError('No valid devices to add. Please check your input and try again.');
-        return;
-    }
-    
-    const progressContainer = document.getElementById('bulkProgress');
-    const resultsContainer = document.getElementById('bulkResults');
-    const progressFill = document.getElementById('progressFill');
-    const progressText = document.getElementById('progressText');
-    const submitBtn = document.getElementById('bulkSubmitBtn');
-    
-    // Show progress
-    progressContainer.style.display = 'block';
-    resultsContainer.style.display = 'none';
-    submitBtn.disabled = true;
-    
-    try {
-        progressText.textContent = 'Preparing bulk add...';
-        progressFill.style.width = '10%';
-        
-        const response = await fetch('/api/devices/bulk', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                bulkData: window.bulkParsedData
-            })
-        });
-        
-        progressFill.style.width = '90%';
-        progressText.textContent = 'Processing response...';
-        
-        const result = await response.json();
-        
-        progressFill.style.width = '100%';
-        progressText.textContent = 'Complete!';
-        
-        // Hide progress after a brief delay
-        setTimeout(() => {
-            progressContainer.style.display = 'none';
-        }, 1000);
-        
-        // Show results
-        displayBulkResults(result);
-        
-        if (result.success) {
-            // Reload devices table
-            await loadDevices();
+// Initialize additional form event listeners when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Form submission handler for bulk add
+    const bulkAddForm = document.getElementById('bulkAddForm');
+    if (bulkAddForm) {
+        bulkAddForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
             
-            if (result.data.successful > 0) {
-                showSuccess(`Successfully added ${result.data.successful} device(s). ${result.data.failed > 0 ? `${result.data.failed} failed.` : ''}`);
+            if (!window.bulkParsedData || window.bulkParsedData.length === 0) {
+                showError('No valid devices to add. Please check your input and try again.');
+                return;
             }
-        } else {
-            showError(result.error || 'Failed to process bulk add');
-        }
-        
-    } catch (error) {
-        progressContainer.style.display = 'none';
-        showError('Failed to bulk add devices: ' + error.message);
-    } finally {
-        submitBtn.disabled = false;
+            
+            const progressContainer = document.getElementById('bulkProgress');
+            const resultsContainer = document.getElementById('bulkResults');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            const submitBtn = document.getElementById('bulkSubmitBtn');
+            
+            // Show progress
+            progressContainer.style.display = 'block';
+            resultsContainer.style.display = 'none';
+            submitBtn.disabled = true;
+            
+            try {
+                progressText.textContent = 'Preparing bulk add...';
+                progressFill.style.width = '10%';
+                
+                const response = await fetch('/api/devices/bulk', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        bulkData: window.bulkParsedData
+                    })
+                });
+                
+                progressFill.style.width = '90%';
+                progressText.textContent = 'Processing response...';
+                
+                const result = await response.json();
+                
+                progressFill.style.width = '100%';
+                progressText.textContent = 'Complete!';
+                
+                // Hide progress after a brief delay
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                }, 1000);
+                
+                // Show results
+                displayBulkResults(result);
+                
+                if (result.success) {
+                    // Reload devices table
+                    await loadDevices();
+                    
+                    if (result.data.successful > 0) {
+                        showSuccess(`Successfully added ${result.data.successful} device(s). ${result.data.failed > 0 ? `${result.data.failed} failed.` : ''}`);
+                    }
+                } else {
+                    showError(result.error || 'Failed to process bulk add');
+                }
+                
+            } catch (error) {
+                progressContainer.style.display = 'none';
+                showError('Failed to bulk add devices: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+    }
+
+    // Auto-parse as user types
+    const bulkInput = document.getElementById('bulkInput');
+    if (bulkInput) {
+        bulkInput.addEventListener('input', function() {
+            // Debounce the parsing to avoid too many calls
+            clearTimeout(this.parseTimeout);
+            this.parseTimeout = setTimeout(() => {
+                parseBulkData();
+            }, 500);
+        });
     }
 });
 
@@ -553,12 +584,3 @@ function displayBulkResults(result) {
     resultsContainer.innerHTML = resultsHTML;
     resultsContainer.style.display = 'block';
 }
-
-// Auto-parse as user types
-document.getElementById('bulkInput').addEventListener('input', function() {
-    // Debounce the parsing to avoid too many calls
-    clearTimeout(this.parseTimeout);
-    this.parseTimeout = setTimeout(() => {
-        parseBulkData();
-    }, 500);
-});
